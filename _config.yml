@@ -12,6 +12,25 @@ permalink: /:year/:month/:day/:title/
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
+  - jekyll-sitemap
+
+# Social / SEO
+twitter:
+  username: cloudstic
+social:
+  name: Cloudstic
+  links:
+    - https://github.com/Cloudstic
+    - https://twitter.com/cloudstic
+
+# Default front matter
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: post
+      author: Cloudstic
 
 # Author defaults
 author: Cloudstic

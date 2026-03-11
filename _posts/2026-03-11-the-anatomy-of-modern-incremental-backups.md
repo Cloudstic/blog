@@ -4,6 +4,10 @@ title: "The Anatomy of Modern Incremental Backups"
 date: 2026-03-11
 author: loichrn
 categories: backup architecture
+description: >-
+  A deep dive into content-addressable storage, content-defined chunking,
+  and Merkle trees — the building blocks of modern incremental backup engines.
+tags: [backup, incremental, deduplication, merkle-tree, content-addressable-storage, encryption]
 ---
 
 If you have ever tried to back up a terabyte of data to the cloud, you know the naive approach of copying everything every time is a disaster. It is slow, expensive, and kills your bandwidth. To solve this, the industry moved to incremental backups where only changed data is uploaded. However, as data scales into the petabytes, the standard way of doing incrementals is hitting a wall.
