@@ -172,7 +172,7 @@ pre {
   }
 
   .page-link {
-    color: $brand-muted;
+    color: $brand-fg-dark;
 
     &:hover {
       color: $brand-fg-dark;
@@ -203,5 +203,23 @@ pre {
   .site-nav {
     background-color: $brand-bg-dark;
     border-color: $brand-border-dark;
+  }
+
+  .site-nav label {
+    background-color: $brand-bg-dark;
+    border-color: $brand-border-dark;
+  }
+
+  .site-nav .menu-icon > svg path {
+    fill: $brand-fg-dark;
+  }
+
+  .site-nav .trigger {
+    background-color: $brand-bg-dark;
+  }
+
+  .site-nav .page-link,
+  .site-nav .page-link:visited {
+    color: $brand-fg-dark !important;
   }
 }
