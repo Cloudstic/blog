@@ -17,11 +17,14 @@ plugins:
 # Social / SEO
 twitter:
   username: cloudstic
+  card: summary_large_image
 social:
   name: Cloudstic
   links:
     - https://github.com/Cloudstic
     - https://twitter.com/cloudstic
+
+og_image: /assets/images/cloudstic-social-logo.png
 
 # Default front matter
 defaults:
