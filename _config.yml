@@ -2,8 +2,8 @@ title: The Cloudstic Engineering Blog
 description: >-
   Engineering insights, cloud architecture, and technical deep dives
   from the Cloudstic team.
-baseurl: "/blog"
-url: "https://cloudstic.github.io"
+baseurl: ""
+url: "https://blog.cloudstic.com"
 
 theme: minima
 
