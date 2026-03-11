@@ -1,0 +1,31 @@
+title: The Cloudstic Engineering Blog
+description: >-
+  Engineering insights, cloud architecture, and technical deep dives
+  from the Cloudstic team.
+baseurl: ""
+url: "https://cloudstic.github.io/blog"
+
+theme: minima
+
+permalink: /:year/:month/:day/:title/
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+# Author defaults
+author:
+  name: Cloudstic
+
+# Build settings
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# Exclude from build
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - LICENSE
