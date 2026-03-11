@@ -14,8 +14,7 @@ plugins:
   - jekyll-seo-tag
 
 # Author defaults
-author:
-  name: Cloudstic
+author: Cloudstic
 
 # Build settings
 markdown: kramdown
