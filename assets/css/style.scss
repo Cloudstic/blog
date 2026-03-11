@@ -1,0 +1,207 @@
+---
+# Front matter required by Jekyll to process SCSS
+---
+
+@import "minima";
+
+// ============================================================
+// Cloudstic Brand Overrides — monochrome neutral + Inter font
+// ============================================================
+
+// Brand tokens
+$brand-bg: #ffffff;
+$brand-bg-dark: #171717;
+$brand-fg: #0a0a0a;
+$brand-fg-dark: #fafafa;
+$brand-muted: #737373;
+$brand-border: #e5e5e5;
+$brand-border-dark: #2e2e2e;
+$brand-surface: #f5f5f5;
+$brand-surface-dark: #262626;
+
+// Typography
+body {
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  color: $brand-fg;
+  background-color: $brand-bg;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// Links — monochrome style (no blue)
+a {
+  color: $brand-fg;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: $brand-muted;
+  transition: text-decoration-color 0.15s;
+
+  &:hover {
+    text-decoration-color: $brand-fg;
+  }
+
+  &:visited {
+    color: $brand-fg;
+  }
+}
+
+// Header
+.site-header {
+  border-top: none;
+  border-bottom: 1px solid $brand-border;
+  background-color: $brand-bg;
+}
+
+.site-title {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  color: $brand-fg !important;
+  text-decoration: none !important;
+
+  &:hover {
+    text-decoration: none !important;
+  }
+
+  svg {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+  }
+}
+
+.page-link {
+  color: $brand-muted;
+  text-decoration: none;
+
+  &:hover {
+    color: $brand-fg;
+    text-decoration: none;
+  }
+}
+
+// Footer
+.site-footer {
+  border-top: 1px solid $brand-border;
+  background-color: $brand-bg;
+  color: $brand-muted;
+
+  a {
+    color: $brand-muted;
+
+    &:hover {
+      color: $brand-fg;
+    }
+  }
+}
+
+// Post titles
+.post-title,
+.post-link {
+  color: $brand-fg;
+  text-decoration: none;
+
+  &:hover {
+    color: $brand-fg;
+    text-decoration: underline;
+  }
+}
+
+// Post metadata
+.post-meta {
+  color: $brand-muted;
+}
+
+// Code blocks
+code {
+  background-color: $brand-surface;
+  border: 1px solid $brand-border;
+  border-radius: 4px;
+  font-size: 0.875em;
+}
+
+pre {
+  background-color: $brand-surface;
+  border: 1px solid $brand-border;
+  border-radius: 8px;
+}
+
+// Wrapper max-width (match web app feel)
+.wrapper {
+  max-width: 780px;
+}
+
+// Dark mode
+@media (prefers-color-scheme: dark) {
+  body {
+    color: $brand-fg-dark;
+    background-color: $brand-bg-dark;
+  }
+
+  a {
+    color: $brand-fg-dark;
+    text-decoration-color: $brand-muted;
+
+    &:hover {
+      text-decoration-color: $brand-fg-dark;
+    }
+
+    &:visited {
+      color: $brand-fg-dark;
+    }
+  }
+
+  .site-header {
+    background-color: $brand-bg-dark;
+    border-bottom-color: $brand-border-dark;
+  }
+
+  .site-title {
+    color: $brand-fg-dark !important;
+
+    svg .cloud {
+      fill: $brand-fg-dark;
+    }
+
+    svg .letter {
+      stroke: $brand-bg-dark;
+    }
+  }
+
+  .page-link {
+    color: $brand-muted;
+
+    &:hover {
+      color: $brand-fg-dark;
+    }
+  }
+
+  .site-footer {
+    background-color: $brand-bg-dark;
+    border-top-color: $brand-border-dark;
+  }
+
+  .post-title,
+  .post-link {
+    color: $brand-fg-dark;
+  }
+
+  code {
+    background-color: $brand-surface-dark;
+    border-color: $brand-border-dark;
+  }
+
+  pre {
+    background-color: $brand-surface-dark;
+    border-color: $brand-border-dark;
+  }
+
+  // Minima dark overrides
+  .site-nav {
+    background-color: $brand-bg-dark;
+    border-color: $brand-border-dark;
+  }
+}
