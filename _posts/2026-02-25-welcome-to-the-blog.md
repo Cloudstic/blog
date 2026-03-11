@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Welcome to The Cloudstic Engineering Blog"
-date: 2026-03-11
+date: 2026-02-25
 categories: announcements
 ---
 

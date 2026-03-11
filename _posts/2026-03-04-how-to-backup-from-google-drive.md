@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "How to Backup FROM Google Drive (And Why You Need To)"
-date: 2026-03-11
+date: 2026-03-04
 author: loichrn
 categories: backup cloud
 ---
