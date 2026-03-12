@@ -187,6 +187,10 @@ pre {
   .post-title,
   .post-link {
     color: $brand-fg-dark;
+
+    &:hover {
+      color: $brand-fg-dark;
+    }
   }
 
   code {
