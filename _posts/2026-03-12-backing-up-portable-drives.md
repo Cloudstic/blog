@@ -187,11 +187,31 @@ We will back up a portable SSD from multiple machines while maintaining a single
 
 ### Step 1: Format Your Drive as GPT
 
+If you are setting up a new drive for cross-platform use, format it as GPT with exFAT (readable on all three OSes without extra drivers):
+
 ```bash
+# macOS
 diskutil eraseDisk ExFAT WorkDrive GPT /dev/disk2
+# Confirm the partition UUID exists
+diskutil info /dev/disk2s1 | grep "Partition UUID"
+# → Partition UUID: A1B2C3D4-5678-ABCD-EF01-234567890ABC
 ```
 
+```bash
+# Linux 
+sudo parted /dev/sdb mklabel gpt 
+sudo parted /dev/sdb mkpart primary 0% 100% 
+sudo mkfs.exfat /dev/sdb1
+
+# Confirm
+ls -la /dev/disk/by-partuuid/
+# → a1b2c3d4-5678-abcd-ef01-234567890abc -> ../../sdb1
+```
+
+
 ### Step 2: Initialize the Backup Repository
+
+Create an encrypted repository. This is a one-time step.
 
 ```bash
 cloudstic init \
@@ -201,43 +221,136 @@ cloudstic init \
   -recovery
 ```
 
-### Step 3: First Backup
+The -recovery flag generates a 24-word BIP39 seed phrase displayed once on screen. Write it down and store it somewhere separate from both drives and your password manager. If you ever forget the passphrase, this phrase is your only way to decrypt your backups.
+
+To use cloud storage instead:
 
 ```bash
+
+# Backblaze B2
+
+export B2_KEY_ID=your-key-id
+export B2_APP_KEY=your-app-key
+cloudstic init \
+  -store b2 \
+  -store-path my-bucket/cloudstic \
+  -encryption-password "your-passphrase" \
+  -recovery
+
+```
+
+### Step 3: First Backup (Machine A)
+
+Set your environment variables to keep the commands clean:
+
+```bash
+
+export CLOUDSTIC_STORE=local
+export CLOUDSTIC_STORE_PATH=/Volumes/BackupDrive/cloudstic
+export CLOUDSTIC_ENCRYPTION_PASSWORD="your-strong-passphrase"
+```
+
+Then back up the drive:
+
+```bash
+# macOS - drive at /Volumes/WorkDrive 
 cloudstic backup \
-  -source local \
+ -source local \
   -source-path /Volumes/WorkDrive \
+  -exclude ".Spotlight-V100/" \
+  -exclude ".fseventsd/" \
+  -exclude ".Trashes/" \
+  -exclude ".DS_Store" \
   -tag work-drive
 ```
 
+Cloudstic detects the GPT UUID from /Volumes/WorkDrive, records it in the snapshot, and uploads the full dataset. For a 100 GB drive with 50,000 files this is the only full upload you will ever need.
+
+```bash
+Scanning source...
+Processing files: 50000/50000 [============================] 100%
+Uploading chunks: 82341 chunks, 98.2 GiB
+
+Backup complete.
+  Files: 50000 new, 0 changed, 0 unmodified, 0 removed
+  Raw data: 98.2 GiB
+  Stored: 91.4 GiB (compressed + encrypted)  
+  Duration: 8m 18s  
+```
+
 ### Step 4: Backup from Another Machine
+
+Eject the drive, plug it into your Linux workstation. The mount path changes from /Volumes/WorkDrive to /media/alice/WorkDrive. The hostname changes. None of that matters.
+
+```bash
+# Linux - same drive, different mount path 
+export CLOUDSTIC_STORE=local 
+export CLOUDSTIC_STORE_PATH=/Volumes/BackupDrive/cloudstic 
+export CLOUDSTIC_ENCRYPTION_PASSWORD="your-strong-passphrase"
+```
 
 ```bash
 cloudstic backup \
   -source local \
   -source-path /media/alice/WorkDrive \
+  -exclude ".Spotlight-V100/" \
+  -exclude ".fseventsd/" \
+  -exclude ".Trashes/" \
   -tag work-drive
 ```
 
-Cloudstic reads the same partition UUID and computes the delta automatically.
+Cloudstic reads the GPT UUID from /media/alice/WorkDrive, matches it to the UUID in Snapshot 1, and computes the delta.
+
+```bash
+Scanning source...
+Processing files: 50000/50000 [============================] 100%
+Uploading chunks: 14 new chunks, 186 MiB
+
+Backup complete.
+  Files: 3 new, 12 changed, 49985 unmodified, 0 removed
+  Raw data: 186 MiB
+  Stored: 154 MiB (compressed + encrypted)
+  Duration: 8s
+```
 
 ### Step 5: Inspect Snapshot History
 
 ```bash
 cloudstic list
+
++-----+---------------------+-----------------+------------------+-----------+------+------------+
+| Seq | Created             | Snapshot Hash   | Source           | Account   | Path | Tags       |
++-----+---------------------+-----------------+------------------+-----------+------+------------+
+| 1   | 2026-03-10 09:14:32 | a3f8d2e1...     | local (WorkDrive)| mac.local | /    | work-drive |
+| 2   | 2026-03-12 11:42:07 | b7c4e9f3...     | local (WorkDrive)| alice-box | /    | work-drive |
++-----+---------------------+-----------------+------------------+-----------+------+------------+
 ```
 
-Snapshots from multiple machines appear in a single incremental chain.
+The Account column shows different hostnames, but the same GPT UUID links both runs into one incremental chain. Path is relative to the volume mount point, so / means the entire drive was backed up.
 
 ### Step 6: Restore Files
+
+Restore a directory from the latest snapshot:
 
 ```bash
 cloudstic restore latest \
   -path Projects/my-project/ \
-  -output ~/restore.zip
+  -output ~/recovered-project.zip
 ```
 
+Or restore a single file from a specific snapshot:
+
+```bash
+cloudstic restore latest \
+  -path Projects/my-project/ \
+  -output ~/recovered-project.zip
+```
+
+Use cloudstic ls <snapshot-id> to browse the file tree if you are unsure of the exact path.
+
 ### Step 7: Retention Policy
+
+Keep 7 daily snapshots and 4 weekly snapshots:
 
 ```bash
 cloudstic forget \
@@ -246,13 +359,32 @@ cloudstic forget \
   --prune
 ```
 
+Because Cloudstic groups snapshots by volume UUID, this policy applies across all machines that backed up this drive.
+
+You get 7 daily snapshots total, not 7 per machine. History stays clean no matter how many hosts touched the drive.
+
 ### Step 8: Automate
 
+Add a cron job to run the backup automatically:
+
 ```bash
+# Edit crontab
 crontab -e
+
+# Add: run every day at 9 AM
+0 9 * * * CLOUDSTIC_STORE=local \
+           CLOUDSTIC_STORE_PATH=/Volumes/BackupDrive/cloudstic \
+           CLOUDSTIC_ENCRYPTION_PASSWORD="your-passphrase" \
+           cloudstic backup \
+             -source local \
+             -source-path /Volumes/WorkDrive \
+             -exclude ".Spotlight-V100/" \
+             -exclude ".fseventsd/" \
+             -exclude ".Trashes/" \
+             -quiet
 ```
 
-Add a daily job.
+The backup will silently skip if the drive is not mounted, so cron scheduling is safe even when the drive is not always connected.
 
 ## Final Thoughts
 
