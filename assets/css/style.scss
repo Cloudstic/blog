@@ -218,6 +218,9 @@ pre {
       color: #d4d4d4;
     }
 
+    // Reset ALL tokens — Minima's light theme leaks dark colors otherwise
+    span { color: #d4d4d4; background-color: transparent; }
+
     // Default text
     .p, .pi, .na, .err { color: #d4d4d4; background-color: transparent; }
 
