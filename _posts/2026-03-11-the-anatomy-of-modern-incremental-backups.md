@@ -116,7 +116,7 @@ Most modern tools build their Merkle Trees by mirroring the computer's natural d
 
 ## 4. About the Author
 
-I have been looking into these industry standards while building [Cloudstic](https://github.com/Cloudstic), a project aimed at solving these specific bottlenecks. To achieve both zero trust privacy and high performance, I realized the engine needed to be built from the ground up.
+I have been looking into these industry standards while building [Cloudstic](https://github.com/cloudstic/cli), a project aimed at solving these specific bottlenecks. To achieve both zero trust privacy and high performance, I realized the engine needed to be built from the ground up.
 
 Cloudstic is a content addressable, encrypted CLI backup tool designed to be fully stateless. Unlike many traditional tools, it can back up from Google Drive and OneDrive using incremental APIs without ever needing to mount the drive.
 
@@ -127,3 +127,5 @@ Cloudstic is a content addressable, encrypted CLI backup tool designed to be ful
 - **Versatile Backends:** Supports local filesystems, Amazon S3 (R2, MinIO), and Backblaze B2.
 - **Smart Retention:** Automated keep-last, hourly, daily, and yearly retention policies.
 - **Point-in-Time Restore:** Instant access to any snapshot or file from any point in history.
+
+For the full command reference and configuration options, see the [Cloudstic CLI documentation](https://docs.cloudstic.com).

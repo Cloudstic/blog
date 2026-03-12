@@ -181,7 +181,7 @@ We will back up a portable SSD from multiple machines while maintaining a single
 
 ### Prerequisites
 
-* Cloudstic CLI installed
+* [Cloudstic CLI](https://github.com/cloudstic/cli) installed
 * GPT-formatted portable drive
 * Backup store (local or cloud)
 
@@ -395,3 +395,7 @@ The GPT partition UUID provides a stable identifier that survives across operati
 By using that identifier, Cloudstic CLI keeps portable drive backups incremental and space efficient no matter where the drive is connected.
 
 Plug the drive into any machine. Run the backup. Only the changes upload.
+
+---
+
+For the full command reference and configuration options, see the [Cloudstic CLI documentation](https://docs.cloudstic.com).

@@ -65,7 +65,7 @@ Getting started with Cloudstic is incredibly simple. You don't need to mount vir
 
 ### Step 1: Install the Cloudstic CLI
 
-First, download and install the open-source CLI from our GitHub releases page or via Homebrew:
+First, download and install the open-source CLI from the [GitHub releases page](https://github.com/cloudstic/cli) or via Homebrew:
 
 ```bash
 brew install cloudstic/tap/cloudstic
@@ -165,4 +165,6 @@ No FUSE mounts. No walking thousands of unchanged local directories.
 
 Syncing to the cloud is just creating a highly efficient mirror for your mistakes.
 
-You can check out the open-source backup engine [on GitHub](https://github.com/Cloudstic).
+You can check out the open-source backup engine [on GitHub](https://github.com/cloudstic/cli).
+
+For the full command reference and configuration options, see the [Cloudstic CLI documentation](https://docs.cloudstic.com).
