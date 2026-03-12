@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Backing Up Portable Drives: From rsync to Cross-Machine Incrementals"
+title: "Backing Up Portable Drives"
 date: 2026-03-12
 author: loichrn
 categories: backup storage

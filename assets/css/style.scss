@@ -196,11 +196,72 @@ pre {
   code {
     background-color: $brand-surface-dark;
     border-color: $brand-border-dark;
+    color: $brand-fg-dark;
   }
 
   pre {
     background-color: $brand-surface-dark;
     border-color: $brand-border-dark;
+    color: $brand-fg-dark;
+  }
+
+  // Syntax highlighting — override Minima/Rouge light theme for dark mode
+  .highlight,
+  figure.highlight,
+  div.highlight {
+    background-color: $brand-surface-dark !important;
+    border-color: $brand-border-dark;
+
+    pre {
+      background-color: transparent;
+      border: none;
+      color: #d4d4d4;
+    }
+
+    // Default text
+    .p, .pi, .na, .err { color: #d4d4d4; background-color: transparent; }
+
+    // Highlighted line (the dark stripe) — make it a subtle lighter band instead
+    .hll { background-color: #333333; }
+
+    // Comments
+    .c, .cm, .cp, .c1, .cs { color: #6b7280; font-style: italic; }
+
+    // Keywords
+    .k, .kd, .kn, .kp, .kr, .kt, .kc { color: #93c5fd; font-weight: normal; }
+
+    // Strings
+    .s, .s1, .s2, .sb, .sc, .sd, .se, .sh, .si, .sx, .sr, .ss { color: #86efac; }
+
+    // Numbers
+    .m, .mb, .mf, .mh, .mi, .mo, .il { color: #fca5a5; }
+
+    // Operators and punctuation
+    .o, .ow { color: #e5e7eb; }
+
+    // Names — functions, classes, builtins
+    .nf, .fm { color: #c4b5fd; }
+    .nc, .nn { color: #67e8f9; }
+    .nb { color: #93c5fd; }
+    .no, .nd, .ni, .ne { color: #fde68a; }
+    .nv, .vc, .vg, .vi, .vm { color: #d4d4d4; }
+
+    // Generic
+    .ge { font-style: italic; }
+    .gs { font-weight: bold; }
+    .gu { color: #9ca3af; }
+    .gd { color: #fca5a5; background-color: #3f1f1f; }
+    .gi { color: #86efac; background-color: #1f3f2a; }
+    .gl { text-decoration: underline; }
+
+    // Bash/shell specific
+    .nv { color: #fde68a; }
+
+    // Line table (when line numbers are shown)
+    table {
+      td.code pre { background-color: transparent; border: none; }
+      td.gutter pre { background-color: transparent; border: none; color: #4b5563; }
+    }
   }
 
   // Minima dark overrides
