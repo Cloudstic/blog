@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+cd "$(dirname "$0")"
+
+if ! command -v bundle &>/dev/null; then
+  echo "Bundler not found. Install Ruby first: brew install ruby"
+  exit 1
+fi
+
+bundle install --quiet
+bundle exec jekyll serve --livereload --open-url
