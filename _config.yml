@@ -38,6 +38,10 @@ defaults:
 # Author defaults
 author: Cloudstic
 
+sass:
+  quiet_deps: true
+  silence_deprecations: [import, global-builtin, color-functions]
+
 # Build settings
 markdown: kramdown
 kramdown:
