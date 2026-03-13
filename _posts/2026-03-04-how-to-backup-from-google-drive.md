@@ -76,13 +76,12 @@ brew install cloudstic/tap/cloudstic
 Choose where you want your backups to live (an AWS S3 bucket, a Backblaze B2 bucket, or even just an external hard drive). For example, to use S3:
 
 ```bash
-export CLOUDSTIC_STORE=s3
-export CLOUDSTIC_STORE_PATH=my-backup-bucket
+export CLOUDSTIC_STORE=s3:my-backup-bucket
 export AWS_ACCESS_KEY_ID=your-key
 export AWS_SECRET_ACCESS_KEY=your-secret
 
 # This will prompt you to securely enter a strong passphrase
-cloudstic init -recovery
+cloudstic init -add-recovery-key
 ```
 
 *(Make sure to save the recovery key that is generated!)*

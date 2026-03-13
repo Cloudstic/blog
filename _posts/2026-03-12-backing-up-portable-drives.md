@@ -215,13 +215,12 @@ Create an encrypted repository. This is a one-time step.
 
 ```bash
 cloudstic init \
-  -store local \
-  -store-path /Volumes/BackupDrive/cloudstic \
-  -encryption-password "your-passphrase" \
-  -recovery
+  -store local:/Volumes/BackupDrive/cloudstic \
+  -password "your-passphrase" \
+  -add-recovery-key
 ```
 
-The -recovery flag generates a 24-word BIP39 seed phrase displayed once on screen. Write it down and store it somewhere separate from both drives and your password manager. If you ever forget the passphrase, this phrase is your only way to decrypt your backups.
+The -add-recovery-key flag generates a 24-word BIP39 seed phrase displayed once on screen. Write it down and store it somewhere separate from both drives and your password manager. If you ever forget the passphrase, this phrase is your only way to decrypt your backups.
 
 To use cloud storage instead:
 
@@ -232,10 +231,9 @@ To use cloud storage instead:
 export B2_KEY_ID=your-key-id
 export B2_APP_KEY=your-app-key
 cloudstic init \
-  -store b2 \
-  -store-path my-bucket/cloudstic \
-  -encryption-password "your-passphrase" \
-  -recovery
+  -store b2:my-bucket/cloudstic \
+  -password "your-passphrase" \
+  -add-recovery-key
 
 ```
 
@@ -245,9 +243,8 @@ Set your environment variables to keep the commands clean:
 
 ```bash
 
-export CLOUDSTIC_STORE=local
-export CLOUDSTIC_STORE_PATH=/Volumes/BackupDrive/cloudstic
-export CLOUDSTIC_ENCRYPTION_PASSWORD="your-strong-passphrase"
+export CLOUDSTIC_STORE=local:/Volumes/BackupDrive/cloudstic
+export CLOUDSTIC_PASSWORD="your-strong-passphrase"
 ```
 
 Then back up the drive:
@@ -255,8 +252,7 @@ Then back up the drive:
 ```bash
 # macOS - drive at /Volumes/WorkDrive 
 cloudstic backup \
- -source local \
-  -source-path /Volumes/WorkDrive \
+  -source local:/Volumes/WorkDrive \
   -exclude ".Spotlight-V100/" \
   -exclude ".fseventsd/" \
   -exclude ".Trashes/" \
@@ -284,15 +280,13 @@ Eject the drive, plug it into your Linux workstation. The mount path changes fro
 
 ```bash
 # Linux - same drive, different mount path 
-export CLOUDSTIC_STORE=local 
-export CLOUDSTIC_STORE_PATH=/Volumes/BackupDrive/cloudstic 
-export CLOUDSTIC_ENCRYPTION_PASSWORD="your-strong-passphrase"
+export CLOUDSTIC_STORE=local:/Volumes/BackupDrive/cloudstic
+export CLOUDSTIC_PASSWORD="your-strong-passphrase"
 ```
 
 ```bash
 cloudstic backup \
-  -source local \
-  -source-path /media/alice/WorkDrive \
+  -source local:/media/alice/WorkDrive \
   -exclude ".Spotlight-V100/" \
   -exclude ".fseventsd/" \
   -exclude ".Trashes/" \
@@ -372,12 +366,10 @@ Add a cron job to run the backup automatically:
 crontab -e
 
 # Add: run every day at 9 AM
-0 9 * * * CLOUDSTIC_STORE=local \
-           CLOUDSTIC_STORE_PATH=/Volumes/BackupDrive/cloudstic \
-           CLOUDSTIC_ENCRYPTION_PASSWORD="your-passphrase" \
+0 9 * * * CLOUDSTIC_STORE=local:/Volumes/BackupDrive/cloudstic \
+           CLOUDSTIC_PASSWORD="your-passphrase" \
            cloudstic backup \
-             -source local \
-             -source-path /Volumes/WorkDrive \
+             -source local:/Volumes/WorkDrive \
              -exclude ".Spotlight-V100/" \
              -exclude ".fseventsd/" \
              -exclude ".Trashes/" \
