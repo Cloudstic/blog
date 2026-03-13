@@ -1,7 +1,6 @@
 source "https://rubygems.org"
 
-gem "jekyll", "~> 4.3"
-gem "csv"
+gem "jekyll", "~> 4.4"
 
 group :jekyll_plugins do
   gem "jekyll-feed"
