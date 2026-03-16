@@ -107,6 +107,13 @@ Or all at once:
 cloudstic backup -all-profiles
 ```
 
+## Prerequisites
+
+- [Cloudstic CLI](https://github.com/cloudstic/cli) installed
+- A backup destination such as a local disk, S3-compatible bucket, Backblaze B2 bucket, or SFTP server
+- A repository password you are willing to store via secret references
+- For cloud sources, an OAuth token file or provider credentials already set up
+
 ## Step 1: Create a Named Store
 
 First define the destination once.
