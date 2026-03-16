@@ -379,11 +379,15 @@ Check snapshots afterward:
 cloudstic list
 ```
 
-Restore when needed:
+Then restore the snapshot you actually want:
 
 ```bash
-cloudstic restore latest -output ./restore.zip
+cloudstic restore <snapshot-hash> -output ./restore.zip
 ```
+
+That detail matters when you use multiple profiles in one repository. `latest`
+means the latest snapshot overall, not necessarily the latest snapshot for your
+`documents` profile.
 
 That is what a practical setup should feel like. The complexity lives in configuration once, not in every daily command.
 
