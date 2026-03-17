@@ -7,15 +7,15 @@ categories: backup cli
 description: >-
   Learn how to turn Cloudstic CLI into a practical daily backup workflow using
   profiles, named stores, reusable auth entries, and secret references instead
-  of fragile shell history and copied command lines.
+  of long one-off commands.
 tags: [backup, cli, profiles, secrets, s3, google-drive, automation]
 ---
 
 The first backup command is easy.
 
-The fiftieth backup command is where things usually fall apart.
+The problem starts when you want to keep running it.
 
-At the beginning, most people run something like this:
+At the beginning, many people do something like this:
 
 ```bash
 cloudstic backup \
@@ -24,76 +24,38 @@ cloudstic backup \
   -source local:~/Documents
 ```
 
-It works. It is also how you end up with secrets in shell history, copy-pasted commands in notes, and one slightly different command per machine.
+This works.
 
-The better pattern is to move from one-off commands to **profiles**.
+It is also how you end up with secrets in shell history, slightly different commands on each machine, and an automation story that becomes fragile very quickly.
 
-Profiles let you define:
-
-- what to back up
-- where it should go
-- which auth entry to use for cloud sources
-- which secret references should be resolved at runtime
-
-In other words: fewer flags, fewer mistakes, and something you can automate without fear.
-
-This article walks through a practical setup for everyday use.
-
-- We will create a named store.
-- We will create a few backup profiles.
-- We will store secrets safely.
-- We will run backups with short, repeatable commands.
-
-If you want the full reference while following along, see the [Cloudstic CLI documentation](https://docs.cloudstic.com) and the [open-source GitHub repository](https://github.com/cloudstic/cli).
+This is why I added profiles.
 
 ## Why Profiles Matter
 
-Without profiles, every backup command needs to carry operational details:
+For a backup workflow, the command itself should be short.
 
-- store URI
-- repository password or key setup
-- cloud credentials
-- source URI
-- OAuth token file paths
-- tags and source-specific flags
+The complexity should live in configuration that you define once.
 
-That is manageable for one experiment. It is not manageable for a backup routine.
+Profiles let you separate three things:
 
-Profiles turn this:
+- where backups are stored
+- how a cloud source authenticates
+- what each backup job actually backs up
 
-```bash
-cloudstic backup \
-  -store s3:my-backups/cloudstic \
-  -s3-region eu-west-1 \
-  -password "$CLOUDSTIC_PASSWORD" \
-  -source local:~/Documents \
-  -tag laptop
-```
+This is not about adding abstraction for the sake of abstraction.
 
-into this:
+It is about making the workflow repeatable.
 
-```bash
-cloudstic backup -profile documents
-```
+## The Goal
 
-That one change sounds small, but it has real benefits:
+Let us say you want:
 
-- automation gets simpler
-- secret handling becomes centralized
-- adding a second source does not duplicate configuration everywhere
-- moving between machines becomes much less error-prone
+- one S3-backed repository
+- one profile for `~/Documents`
+- one profile for `~/Pictures`
+- one Google Drive profile for work files
 
-## The Practical Goal
-
-Let us build a setup that looks like this:
-
-- `home-s3` store for encrypted backups in S3-compatible storage
-- `documents` profile for `~/Documents`
-- `pictures` profile for `~/Pictures`
-- `google-work` auth entry for a Google Drive source
-- `work-drive` profile for a Google Drive backup
-
-By the end, daily backup commands will look like this:
+The end result should look like this:
 
 ```bash
 cloudstic backup -profile documents
@@ -101,24 +63,19 @@ cloudstic backup -profile pictures
 cloudstic backup -profile work-drive
 ```
 
-Or all at once:
+Or, if you want everything:
 
 ```bash
 cloudstic backup -all-profiles
 ```
 
-## Prerequisites
+That is the practical value.
 
-- [Cloudstic CLI](https://github.com/cloudstic/cli) installed
-- A backup destination such as a local disk, S3-compatible bucket, Backblaze B2 bucket, or SFTP server
-- A repository password you are willing to store via secret references
-- For cloud sources, an OAuth token file or provider credentials already set up
+## Step 1: Define the Store Once
 
-## Step 1: Create a Named Store
+First define the destination.
 
-First define the destination once.
-
-Here is an S3 example:
+For example, an S3-backed store:
 
 ```bash
 cloudstic store new \
@@ -127,40 +84,33 @@ cloudstic store new \
   -s3-region eu-west-1
 ```
 
-This creates or updates a named store entry in `profiles.yaml`.
+At this point, the destination has a name.
 
-You only need to define the backend once. Every profile can then point at `home-s3` with `-store-ref home-s3`.
+You no longer need to repeat the bucket path and region in every command.
 
-If you prefer local storage for testing, the same pattern works:
+## Step 2: Initialize the Repository
 
-```bash
-cloudstic store new \
-  -name local-disk \
-  -uri local:/Volumes/BackupDrive/cloudstic
-```
+Configuration alone does not create the repository.
 
-## Step 2: Initialize the Repository Once
-
-Defining a store is configuration. Initializing it creates the repository.
+You still need to initialize it once:
 
 ```bash
 cloudstic store init home-s3
 ```
 
-Cloudstic will set up the encrypted repository and create key slots.
+This creates the encrypted repository and its key slots.
 
-If you want a recovery phrase as well, initialize with that in mind during your first setup flow. The important operational point is this: **repository encryption and runtime credential storage are separate things**.
+The important distinction is that repository encryption and runtime secret resolution are two different concerns.
 
-- repository encryption protects the backup data
-- profile secret references tell the CLI how to obtain passwords and API keys at runtime
+The repository protects the backup data.
 
-That distinction matters when you design your setup.
+Profiles tell the CLI how to obtain the credentials needed to operate.
 
-## Step 3: Create Local Backup Profiles
+## Step 3: Create Local Profiles
 
 Now define what should be backed up.
 
-For `~/Documents`:
+For documents:
 
 ```bash
 cloudstic profile new \
@@ -169,7 +119,7 @@ cloudstic profile new \
   -store-ref home-s3
 ```
 
-For `~/Pictures`:
+For pictures:
 
 ```bash
 cloudstic profile new \
@@ -178,20 +128,18 @@ cloudstic profile new \
   -store-ref home-s3
 ```
 
-At this point, your daily backup flow is already much better:
+At this stage, daily commands already become simpler:
 
 ```bash
 cloudstic backup -profile documents
 cloudstic backup -profile pictures
 ```
 
-No repeated store URI. No repeated region. No repeated credential flags.
+## Step 4: Reuse Cloud Authentication
 
-## Step 4: Add a Cloud Auth Entry
+The same idea also applies to cloud sources.
 
-Profiles can also reference reusable OAuth settings for cloud sources.
-
-Let us create a Google auth entry:
+For example, define a Google auth entry once:
 
 ```bash
 cloudstic auth new \
@@ -200,13 +148,13 @@ cloudstic auth new \
   -google-token-file ~/.config/cloudstic/tokens/google-work.json
 ```
 
-Then log in once:
+Then authenticate once:
 
 ```bash
 cloudstic auth login -name google-work
 ```
 
-Now attach that auth entry to a backup profile:
+Now create a profile that uses it:
 
 ```bash
 cloudstic profile new \
@@ -216,61 +164,26 @@ cloudstic profile new \
   -auth-ref google-work
 ```
 
-That gives you a native Google Drive backup command that is still short and repeatable:
+The resulting command stays short:
 
 ```bash
 cloudstic backup -profile work-drive
 ```
 
-## Step 5: Store Secrets the Right Way
+## Step 5: Do Not Put Raw Secrets in the Config
 
-This is the part many backup guides skip.
+This is the part that matters most operationally.
 
-Do not put secrets directly in `profiles.yaml`.
+Do not store raw secrets directly in `profiles.yaml`.
 
-Instead, store **secret references** there.
+Store references instead.
 
-Cloudstic supports these practical patterns today:
+The two practical patterns are:
 
 - `env://VAR_NAME`
 - `keychain://service/account` on macOS
 
-### Good: Environment Variables
-
-Environment variables are the simplest portable option, especially for:
-
-- headless servers
-- CI jobs
-- containers
-- Linux systems without a desktop keyring
-
-Example references inside `profiles.yaml`:
-
-```yaml
-stores:
-  home-s3:
-    uri: s3:my-backup-bucket/cloudstic
-    s3_region: eu-west-1
-    s3_access_key_secret: env://AWS_ACCESS_KEY_ID
-    s3_secret_key_secret: env://AWS_SECRET_ACCESS_KEY
-    password_secret: env://CLOUDSTIC_PASSWORD
-```
-
-Then export the real values in your shell, systemd unit, launchd plist, or CI secret store:
-
-```bash
-export AWS_ACCESS_KEY_ID=AKIA...
-export AWS_SECRET_ACCESS_KEY=...
-export CLOUDSTIC_PASSWORD="use-a-real-password-manager"
-```
-
-This keeps the config file shareable while the actual secret values stay outside it.
-
-### Better on macOS: Keychain References
-
-If you are on macOS and running backups from your own machine, Keychain is more convenient than re-exporting secrets in every shell.
-
-Example store configuration:
+For example:
 
 ```yaml
 stores:
@@ -282,28 +195,15 @@ stores:
     password_secret: keychain://cloudstic/home-s3/repo-password
 ```
 
-In that model:
+This keeps the configuration file shareable while the actual secret values stay outside it.
 
-- the access key ID comes from the environment
-- the S3 secret key comes from macOS Keychain
-- the repository password comes from macOS Keychain
+On a server or in CI, environment variables are usually the easiest option.
 
-This is a very practical split. Non-sensitive identifiers can live in env vars, while higher-value secrets stay in the system keychain.
+On a personal macOS machine, Keychain is often more convenient.
 
-### What Not to Do
+## What the File Looks Like
 
-Avoid these habits:
-
-- hardcoding repository passwords directly in shell scripts
-- committing `profiles.yaml` with raw secret values
-- pasting cloud credentials into terminal history
-- using one giant command copied between machines with slight edits
-
-Backups should reduce operational risk, not create a second secret-management problem.
-
-## What `profiles.yaml` Can Look Like
-
-Here is a realistic example with one store, one OAuth entry, and three profiles:
+With one store, one auth entry, and three profiles, the configuration stays readable:
 
 ```yaml
 stores:
@@ -334,104 +234,78 @@ profiles:
     auth_ref: google-work
 ```
 
-This is the core idea of practical backups:
+This is the main idea:
 
-- stores define destinations and secret references
-- auth entries define reusable cloud login settings
-- profiles define actual backup jobs
+- stores define destinations
+- auth entries define reusable cloud login configuration
+- profiles define backup jobs
 
-## Step 6: Inspect and Verify Before You Trust It
+## Step 6: Verify Before Automating
 
-Before putting a backup workflow on autopilot, inspect it.
+Before trusting the setup, inspect it.
 
-List what is configured:
+List profiles:
 
 ```bash
 cloudstic profile list
 ```
 
-Show one profile with resolved references:
+Show one profile:
 
 ```bash
 cloudstic profile show documents
 ```
 
-Verify that a store can resolve credentials and unlock correctly:
+Verify the store:
 
 ```bash
 cloudstic store verify home-s3
 ```
 
-That last command is especially useful after rotating credentials or moving to a new machine.
+This is especially useful after rotating credentials or moving to a new machine.
 
-## Step 7: Run the Actual Backup Routine
+## Step 7: Run the Routine
 
-Once the store and profiles exist, your real-world workflow becomes boring in the best way.
+Once the setup exists, the real workflow becomes boring, which is exactly what I want from a backup system.
 
-Back up one profile:
+Run one profile:
 
 ```bash
 cloudstic backup -profile documents
 ```
 
-Back up everything enabled in `profiles.yaml`:
+Run everything:
 
 ```bash
 cloudstic backup -all-profiles
 ```
 
-Check snapshots afterward:
+Inspect snapshots:
 
 ```bash
 cloudstic list
 ```
 
-Then restore the snapshot you actually want:
+Restore what you need:
 
 ```bash
 cloudstic restore <snapshot-hash> -output ./restore.zip
 ```
 
-That detail matters when you use multiple profiles in one repository. `latest`
-means the latest snapshot overall, not necessarily the latest snapshot for your
-`documents` profile.
+## Conclusion
 
-That is what a practical setup should feel like. The complexity lives in configuration once, not in every daily command.
+For me, profiles are not a cosmetic CLI feature.
 
-## A Good Pattern for Automation
+They are the point where backup commands stop being one-off experiments and become an actual workflow.
 
-After moving to profiles, automation becomes much safer.
+The benefit is simple:
 
-For example, a scheduled job only needs to provide the secrets and invoke one stable command:
-
-```bash
-export AWS_ACCESS_KEY_ID=AKIA...
-export AWS_SECRET_ACCESS_KEY=...
-export CLOUDSTIC_PASSWORD="..."
-
-cloudstic backup -all-profiles
-```
-
-No giant inline flag list. No repeated source declarations. No chance that one machine forgot `-s3-region` or pointed at the wrong bucket path.
-
-On macOS, if you use Keychain-backed secret refs, the scheduled command can be even shorter because fewer secrets need to be exported in the job itself.
-
-## The Main Idea
-
-The best backup setup is not the one with the most features.
-
-It is the one you will actually keep running six months from now.
-
-Profiles help because they make backups operationally boring:
-
-- short commands
-- reusable destinations
-- reusable auth configuration
+- shorter commands
+- cleaner automation
 - safer secret handling
-- simpler automation
+- less duplication
+- less room for operational mistakes
 
-If you are still backing things up with hand-written one-off commands, this is the upgrade that usually makes the workflow stick.
+If the command you run every day still contains every flag, every secret, and every path inline, the setup is not finished yet.
 
-For the complete command reference, see the [Cloudstic CLI documentation](https://docs.cloudstic.com).
-
-If you want to inspect the code or try the project yourself, the CLI is open source on [GitHub](https://github.com/cloudstic/cli).
+For the complete command reference, see the [Cloudstic CLI documentation](https://docs.cloudstic.com). The CLI is also open source on [GitHub](https://github.com/cloudstic/cli).

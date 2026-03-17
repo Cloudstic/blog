@@ -5,252 +5,142 @@ date: 2026-03-12
 author: loichrn
 categories: backup storage
 description: >-
-  Portable drives travel between machines with different hostnames and mount points.
-  We compare rsync, Restic, Borg, and Time Machine, then show how GPT partition UUIDs
-  enable true cross-machine incremental backups with Cloudstic CLI.
-tags: [backup, portable-drive, external-drive, incremental, rsync, restic, uuid, cross-machine]
+  Portable drives move between machines, mount points, and operating systems.
+  This article explains why many backup tools break incremental history in that
+  situation, and how Cloudstic uses GPT partition UUIDs to keep a single backup
+  lineage across machines.
+tags: [backup, portable-drive, external-drive, incremental, restic, borg, uuid, cross-machine]
 ---
 
-A portable drive is convenient storage. It is not a backup.
+A portable drive is convenient storage but It is not a backup.
 
-External SSDs and USB drives travel between machines. One day your drive is connected to your Mac, the next day to a Linux workstation, and later to a Windows laptop. That mobility is exactly what makes backing them up surprisingly difficult.
+There is also a second problem that appears as soon as you try to back it up seriously: the drive moves.
 
-Most backup tools quietly assume that the *machine and mount path* define the identity of the source being backed up. Portable drives break that assumption.
+On one machine it is mounted as `/Volumes/WorkDrive`.
 
-On Monday your SSD appears at `/Volumes/WorkDrive` on macOS.  
-On Tuesday the same drive mounts at `/media/alice/WorkDrive` on Linux.  
-On Wednesday it becomes `E:\` on Windows.
+On another one it becomes `/media/alice/WorkDrive`.
 
-To a human these are obviously the same drive. To most backup tools they look like completely different sources.
+On Windows it may become `E:\`.
 
-The result is frustrating. Instead of uploading only the files that changed, the tool must rescan the entire drive and rebuild snapshot metadata. Incremental history becomes fragmented and backups take longer than necessary.
+For a human, this is obviously the same drive, for many backup tools, it is not.
 
-This article explores how popular backup tools behave in this situation. Then we show how using the **GPT partition UUID** solves the cross-machine identity problem and enables proper incremental backups with Cloudstic CLI.
+## The Actual Problem
 
-## The Cross-Machine Problem
+Many backup tools identify a source using some combination of:
 
-Suppose you have a 100 GB portable SSD and you want encrypted incremental backups to a cloud bucket.
+- hostname
+- absolute path
+- mount point
 
-Day 1: you plug the drive into your Mac and run a backup.  
-Day 2: you plug the same drive into a Linux workstation.
+This is acceptable for internal disks.
 
-You changed only **200 MB** of files.
+It is not acceptable for portable drives.
 
-How much data should the second backup upload?
+If the identity changes every time the drive moves to another machine, incremental history breaks. Even when deduplication prevents re-uploading all data, the tool still has to rebuild state as if it had discovered a new source.
 
-With a tool that treats both runs as the **same source**: **200 MB**.
+In practice, this means more scanning, more metadata, and a fragmented backup history.
 
-With a tool that treats them as **different sources**: the entire drive must be scanned again and a new snapshot tree created. Even when chunk deduplication prevents re-uploading most data blocks, the backup still requires hashing every file and storing new metadata.
+## What the Identity Should Be
 
-```mermaid
-graph LR
-    Drive["🔌 Portable SSD\n100 GB"]
+For a portable drive, the identity should come from the drive itself.
 
-    Drive -->|Day 1 - macOS| MA["/Volumes/WorkDrive"]
-    Drive -->|Day 2 - Linux| LX["/media/alice/WorkDrive"]
-    Drive -->|Day 3 - Windows| WN["E:\\"]
+On modern drives, the right identifier already exists: the GPT partition UUID.
 
-    MA -->|hostname+path based identity| S1["Snapshot 1\n100 GB uploaded"]
-    LX -->|different host+path, no match| S2["Snapshot 2\nnew snapshot tree"]
-    WN -->|different host+path, no match| S3["Snapshot 3\nnew snapshot tree"]
-````
+This UUID is:
 
-The correct behaviour requires a stable identifier for the drive that survives remounting. That identifier already exists on every modern drive: the **GPT partition UUID**.
+- stable across reboots
+- independent of mount point
+- independent of hostname
+- usable across operating systems
 
-```mermaid
-graph LR
-    Drive["🔌 Portable SSD\nGPT UUID: a1b2c3d4-..."]
+This is the identifier I wanted Cloudstic to use for portable drives.
 
-    Drive -->|Day 1 - macOS| S1["Snapshot 1\n100 GB uploaded"]
-    Drive -->|Day 2 - Linux| S2["Snapshot 2\n200 MB delta"]
-    Drive -->|Day 3 - Windows| S3["Snapshot 3\n50 MB delta"]
+## How Common Tools Behave
 
-    S1 --> S2 --> S3
-```
+There are several good backup tools on the market. The issue here is not quality in general. The issue is portable-drive identity.
 
-## How Popular Tools Handle It
+### rsync
 
-Several popular backup tools come close to solving this problem, but most still depend on hostname or mount path when identifying a backup source. That assumption works for internal disks but fails for portable drives.
+`rsync` is a very useful file copy tool.
 
-### rsync / `--link-dest`
+It can be used to build snapshot-like workflows with `--link-dest`, but it does not have a real notion of encrypted repository, snapshot identity, or portable drive UUID.
 
-rsync is the backbone of countless backup scripts and homegrown snapshot systems. With `--link-dest`, unchanged files are hardlinked from the previous backup directory rather than copied, giving you space-efficient snapshot rotation.
+For this use case, it requires scripting and discipline.
 
-```bash
-rsync -av \
-  --link-dest=/backup/2026-03-11 \
-  /Volumes/WorkDrive/ \
-  /backup/2026-03-12/
-```
+### Time Machine
 
-`--link-dest` points to a path on your backup storage. When you switch machines, you either have no access to that path, or you must manually determine which previous snapshot directory to reference.
+Time Machine is tied to macOS and works per machine.
 
-rsync has no concept of source identity, encryption, or drive UUIDs. It is fundamentally a file copy tool, not a backup system.
+If the same portable drive is backed up from two different Macs, you effectively get two different histories.
 
-**Portable drive verdict:** ❌ Mount point changes break incremental history. Manual scripting required.
+### Restic and Borg
 
-### Time Machine (macOS)
+Restic and Borg are serious backup tools, and I like both.
 
-Apple's Time Machine tracks backups per machine. Source identity is `computername + Apple-specific volume UUID`. Two machines backing up the same drive produce two independent histories with zero deduplication between them.
+However, their default source identity model is still centered on the machine and the path.
 
-Time Machine is also macOS-only, requires APFS or HFS+ on the destination, and writes to Apple's proprietary sparse bundle format. There is no CLI, no user-controlled encryption, and no cloud storage target.
+You can work around this with manual overrides such as `--host`, but then the correctness of the history depends on the user remembering to keep the override identical everywhere.
 
-**Portable drive verdict:** ❌ Per-machine only, macOS exclusive.
+This works, but I do not consider it a satisfying solution for a portable drive.
 
-### Restic
+## The Approach in Cloudstic
 
-Restic is a mature and widely respected backup tool. Repositories are encrypted and content-addressed. They can target S3, B2, SFTP, and local storage. Source identity lives in the snapshot metadata as `hostname + paths`.
+Cloudstic treats a portable local source differently.
 
-```bash
-# Machine A (macOS)
-restic -r s3:s3.amazonaws.com/my-bucket backup /Volumes/WorkDrive
+When a volume UUID is available, it takes precedence over hostname and path for snapshot matching.
 
-# Machine B (Linux)
-restic -r s3:s3.amazonaws.com/my-bucket backup /media/alice/WorkDrive
-```
+This means that if you:
 
-These two snapshots share no lineage. Restic treats them as independent backup sources.
+1. back up a drive on macOS
+2. unplug it
+3. connect it to Linux
+4. run the backup again
 
-Because Restic uses content-addressed chunking, previously uploaded data chunks are reused. However, the entire drive must still be scanned again and a new snapshot tree created.
+Cloudstic can continue the same snapshot lineage automatically.
 
-The workaround is `--host`:
+This is the behavior I expected from the start.
 
-```bash
-restic -r s3:s3.amazonaws.com/my-bucket backup \
-  --host "portable-ssd-identity" \
-  /media/alice/WorkDrive
-```
+The path inside the snapshot is stored relative to the volume root, so changing the mount point does not create an artificial identity change.
 
-This works, but requires maintaining the same `--host` value consistently across machines. Forgetting the flag even once creates a separate snapshot lineage.
+## What This Changes in Practice
 
-**Portable drive verdict:** ⚠️ Works with strict manual discipline.
+Suppose you have a 100 GB external SSD.
 
-### Borg Backup
+You back it up from machine A.
 
-Borg is an excellent deduplicating archiver with strong encryption and compression. Like Restic, Borg assumes that the hostname identifies the machine performing the backup.
+The next day you modify only 200 MB of files and plug the same drive into machine B.
 
-Source identity is `hostname + paths`. Borg repositories must be local or accessed via SSH.
+The correct outcome is simple: the next backup should process the same source lineage and upload only the delta.
 
-You can override hostname behaviour with flags, but there is no built-in UUID-based tracking for portable drives.
+That is exactly what a UUID-based identity gives.
 
-**Portable drive verdict:** ⚠️ Manual hostname override required.
+Without it, you still get deduplication benefits, but you lose the continuity of the source history.
 
-### Tool Comparison
+## Minimal Example with Cloudstic
 
-| Tool                | Source identity        | Cross-machine incremental | GPT UUID detection | Cloud storage |
-| ------------------- | ---------------------- | ------------------------- | ------------------ | ------------- |
-| rsync `--link-dest` | Mount path             | ❌                         | ❌                  | ❌             |
-| Time Machine        | Machine name + volume  | ❌                         | ❌                  | ❌             |
-| Restic              | Hostname + path        | ⚠️ Manual `--host`        | ❌                  | ✅             |
-| Borg                | Hostname + path        | ⚠️ Manual override        | ❌                  | ❌ (SFTP only) |
-| **Cloudstic CLI**   | **GPT partition UUID** | **✅ Automatic**           | **✅ Automatic**    | **✅**         |
+### 1. Initialize the Repository
 
-## Why the GPT Partition UUID Works
-
-Every drive formatted with a GUID Partition Table (GPT) carries a partition UUID in its metadata.
-
-This UUID has several properties that make it ideal for identifying a portable drive:
-
-* **Stable** across reboots, reconnects, and cable changes
-* **Consistent** across macOS, Linux, and Windows
-* **Independent** of mount point and hostname
-* **Unique** per partition
-
-All modern drives carry this UUID. Only legacy MBR drives lack it.
-
-```mermaid
-graph TD
-    subgraph "GPT Partition Table embedded on the drive"
-        PT["Partition Entry\nType GUID\nPartition GUID\nName"]
-    end
-
-    PT --> Mac["macOS"]
-    PT --> Linux["Linux"]
-    PT --> Win["Windows"]
-```
-
-Cloudstic reads this UUID from the filesystem when you specify a source path that lives on a mounted partition. The UUID is stored in snapshot metadata and used to match future runs.
-
-Plug the same drive into another machine and Cloudstic links the backup automatically.
-
-## Hands-On: Backing Up a Portable Drive with Cloudstic CLI
-
-Now let us walk through a real example.
-
-We will back up a portable SSD from multiple machines while maintaining a single incremental history.
-
-### Prerequisites
-
-* [Cloudstic CLI](https://github.com/cloudstic/cli) installed
-* GPT-formatted portable drive
-* Backup store (local or cloud)
-
-### Step 1: Format Your Drive as GPT
-
-If you are setting up a new drive for cross-platform use, format it as GPT with exFAT (readable on all three OSes without extra drivers):
-
-```bash
-# macOS
-diskutil eraseDisk ExFAT WorkDrive GPT /dev/disk2
-# Confirm the partition UUID exists
-diskutil info /dev/disk2s1 | grep "Partition UUID"
-# → Partition UUID: A1B2C3D4-5678-ABCD-EF01-234567890ABC
-```
-
-```bash
-# Linux 
-sudo parted /dev/sdb mklabel gpt 
-sudo parted /dev/sdb mkpart primary 0% 100% 
-sudo mkfs.exfat /dev/sdb1
-
-# Confirm
-ls -la /dev/disk/by-partuuid/
-# → a1b2c3d4-5678-abcd-ef01-234567890abc -> ../../sdb1
-```
-
-
-### Step 2: Initialize the Backup Repository
-
-Create an encrypted repository. This is a one-time step.
+For example on local storage:
 
 ```bash
 cloudstic init \
   -store local:/Volumes/BackupDrive/cloudstic \
-  -password "your-passphrase" \
-  -add-recovery-key
+  -recovery
 ```
 
-The -add-recovery-key flag generates a 24-word BIP39 seed phrase displayed once on screen. Write it down and store it somewhere separate from both drives and your password manager. If you ever forget the passphrase, this phrase is your only way to decrypt your backups.
-
-To use cloud storage instead:
+Or on object storage, for example S3-compatible storage:
 
 ```bash
+export CLOUDSTIC_STORE=s3:my-backup-bucket
+export AWS_ACCESS_KEY_ID=your-key
+export AWS_SECRET_ACCESS_KEY=your-secret
 
-# Backblaze B2
-
-export B2_KEY_ID=your-key-id
-export B2_APP_KEY=your-app-key
-cloudstic init \
-  -store b2:my-bucket/cloudstic \
-  -password "your-passphrase" \
-  -add-recovery-key
-
+cloudstic init -recovery
 ```
 
-### Step 3: First Backup (Machine A)
-
-Set your environment variables to keep the commands clean:
+### 2. First Backup on Machine A
 
 ```bash
-
-export CLOUDSTIC_STORE=local:/Volumes/BackupDrive/cloudstic
-export CLOUDSTIC_PASSWORD="your-strong-passphrase"
-```
-
-Then back up the drive:
-
-```bash
-# macOS - drive at /Volumes/WorkDrive 
 cloudstic backup \
   -source local:/Volumes/WorkDrive \
   -exclude ".Spotlight-V100/" \
@@ -260,29 +150,9 @@ cloudstic backup \
   -tag work-drive
 ```
 
-Cloudstic detects the GPT UUID from /Volumes/WorkDrive, records it in the snapshot, and uploads the full dataset. For a 100 GB drive with 50,000 files this is the only full upload you will ever need.
+At this point Cloudstic detects the volume UUID and stores it in the snapshot metadata.
 
-```bash
-Scanning source...
-Processing files: 50000/50000 [============================] 100%
-Uploading chunks: 82341 chunks, 98.2 GiB
-
-Backup complete.
-  Files: 50000 new, 0 changed, 0 unmodified, 0 removed
-  Raw data: 98.2 GiB
-  Stored: 91.4 GiB (compressed + encrypted)  
-  Duration: 8m 18s  
-```
-
-### Step 4: Backup from Another Machine
-
-Eject the drive, plug it into your Linux workstation. The mount path changes from /Volumes/WorkDrive to /media/alice/WorkDrive. The hostname changes. None of that matters.
-
-```bash
-# Linux - same drive, different mount path 
-export CLOUDSTIC_STORE=local:/Volumes/BackupDrive/cloudstic
-export CLOUDSTIC_PASSWORD="your-strong-passphrase"
-```
+### 3. Second Backup on Machine B
 
 ```bash
 cloudstic backup \
@@ -293,101 +163,34 @@ cloudstic backup \
   -tag work-drive
 ```
 
-Cloudstic reads the GPT UUID from /media/alice/WorkDrive, matches it to the UUID in Snapshot 1, and computes the delta.
+Same drive, different hostname, different mount point.
 
-```bash
-Scanning source...
-Processing files: 50000/50000 [============================] 100%
-Uploading chunks: 14 new chunks, 186 MiB
+Cloudstic matches the volume UUID and continues the same incremental chain.
 
-Backup complete.
-  Files: 3 new, 12 changed, 49985 unmodified, 0 removed
-  Raw data: 186 MiB
-  Stored: 154 MiB (compressed + encrypted)
-  Duration: 8s
-```
+On macOS and Linux this UUID is detected automatically. When auto-detection is unavailable, you can still provide `-volume-uuid` manually.
 
-### Step 5: Inspect Snapshot History
+## Retention Also Becomes Cleaner
 
-```bash
-cloudstic list
+This matters for retention as well.
 
-+-----+---------------------+-----------------+------------------+-----------+------+------------+
-| Seq | Created             | Snapshot Hash   | Source           | Account   | Path | Tags       |
-+-----+---------------------+-----------------+------------------+-----------+------+------------+
-| 1   | 2026-03-10 09:14:32 | a3f8d2e1...     | local (WorkDrive)| mac.local | /    | work-drive |
-| 2   | 2026-03-12 11:42:07 | b7c4e9f3...     | local (WorkDrive)| alice-box | /    | work-drive |
-+-----+---------------------+-----------------+------------------+-----------+------+------------+
-```
+If snapshots are grouped by volume UUID, a retention policy applies to the drive as one source, not once per machine.
 
-The Account column shows different hostnames, but the same GPT UUID links both runs into one incremental chain. Path is relative to the volume mount point, so / means the entire drive was backed up.
+So keeping 7 daily snapshots means 7 daily snapshots for the portable drive, not 7 on the Mac side and 7 on the Linux side.
 
-### Step 6: Restore Files
+This is a small detail, but it keeps history much cleaner.
 
-Restore a directory from the latest snapshot:
+## Conclusion
 
-```bash
-cloudstic restore latest \
-  -path Projects/my-project/ \
-  -output ~/recovered-project.zip
-```
+Portable drives move between machines.
 
-Or restore a single file from a specific snapshot:
+If the backup tool identifies them by hostname or mount point, it will eventually treat the same drive as multiple sources.
 
-```bash
-cloudstic restore latest \
-  -path Projects/my-project/ \
-  -output ~/recovered-project.zip
-```
+For me, this is the wrong model.
 
-Use cloudstic ls <snapshot-id> to browse the file tree if you are unsure of the exact path.
+The identity should come from the drive itself.
 
-### Step 7: Retention Policy
+Using the GPT partition UUID solves that problem and makes cross-machine incremental backups behave as expected.
 
-Keep 7 daily snapshots and 4 weekly snapshots:
+That is the approach implemented in Cloudstic for portable local sources.
 
-```bash
-cloudstic forget \
-  --keep-daily 7 \
-  --keep-weekly 4 \
-  --prune
-```
-
-Because Cloudstic groups snapshots by volume UUID, this policy applies across all machines that backed up this drive.
-
-You get 7 daily snapshots total, not 7 per machine. History stays clean no matter how many hosts touched the drive.
-
-### Step 8: Automate
-
-Add a cron job to run the backup automatically:
-
-```bash
-# Edit crontab
-crontab -e
-
-# Add: run every day at 9 AM
-0 9 * * * CLOUDSTIC_STORE=local:/Volumes/BackupDrive/cloudstic \
-           CLOUDSTIC_PASSWORD="your-passphrase" \
-           cloudstic backup \
-             -source local:/Volumes/WorkDrive \
-             -exclude ".Spotlight-V100/" \
-             -exclude ".fseventsd/" \
-             -exclude ".Trashes/" \
-             -quiet
-```
-
-The backup will silently skip if the drive is not mounted, so cron scheduling is safe even when the drive is not always connected.
-
-## Final Thoughts
-
-Portable drives are convenient, but their mobility exposes a weakness in many backup tools. When identity depends on hostname or mount path, incremental history breaks as soon as the drive moves to another machine.
-
-The GPT partition UUID provides a stable identifier that survives across operating systems, mount points, and hostnames.
-
-By using that identifier, Cloudstic CLI keeps portable drive backups incremental and space efficient no matter where the drive is connected.
-
-Plug the drive into any machine. Run the backup. Only the changes upload.
-
----
-
-For the full command reference and configuration options, see the [Cloudstic CLI documentation](https://docs.cloudstic.com).
+If you want the full command reference, see the [Cloudstic CLI documentation](https://docs.cloudstic.com).
