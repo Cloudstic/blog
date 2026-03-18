@@ -15,3 +15,5 @@ we're passionate about.
 
 Stay tuned for upcoming posts on cloud architecture, infrastructure as code,
 and modern engineering practices.
+
+If you want to try Cloudstic, start with the [installation guide](https://docs.cloudstic.com/installation).

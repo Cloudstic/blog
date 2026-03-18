@@ -26,6 +26,15 @@ If you want the general explanation first, you can read [Google Drive Is Not a B
 
 This article is only about the logs.
 
+## Prerequisites
+
+Before reproducing the debug runs below, make sure you have:
+
+- the Cloudstic CLI installed by following the [installation guide](https://docs.cloudstic.com/installation)
+- a repository destination configured and reachable
+- Google Drive authentication available for the `gdrive-changes` source
+- `--debug` output enabled on a test setup rather than on production data you do not want to inspect live
+
 ## Repository Initialization
 
 Here is a representative `cloudstic init --debug` run:
@@ -165,3 +174,5 @@ This is why the second backup can complete in about a second.
 It is not doing the same work again. It is using the source's own incremental mechanism and reusing the existing structure.
 
 That is also why I find `--debug` useful. It lets you see the difference between a real native backup flow and a tool that only looks native from the outside.
+
+If you want to try this yourself, start with the [Cloudstic installation guide](https://docs.cloudstic.com/installation).

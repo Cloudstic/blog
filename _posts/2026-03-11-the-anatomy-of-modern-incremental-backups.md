@@ -128,4 +128,4 @@ Cloudstic is a content addressable, encrypted CLI backup tool designed to be ful
 - **Smart Retention:** Automated keep-last, hourly, daily, and yearly retention policies.
 - **Point-in-Time Restore:** Instant access to any snapshot or file from any point in history.
 
-For the full command reference and configuration options, see the [Cloudstic CLI documentation](https://docs.cloudstic.com).
+If you want to try Cloudstic, start with the [installation guide](https://docs.cloudstic.com/installation). For the full command reference and configuration options, see the [Cloudstic CLI documentation](https://docs.cloudstic.com).

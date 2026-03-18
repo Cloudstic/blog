@@ -116,6 +116,15 @@ That is exactly what a UUID-based identity gives.
 
 Without it, you still get deduplication benefits, but you lose the continuity of the source history.
 
+## Prerequisites
+
+Before running the examples below, make sure you have:
+
+- the Cloudstic CLI installed on each machine that will back up the drive by following the [installation guide](https://docs.cloudstic.com/installation)
+- a portable drive formatted with a stable partition identifier such as a GPT partition UUID
+- access to the backup repository from every machine involved
+- repository credentials available before you start the first backup
+
 ## Minimal Example with Cloudstic
 
 ### 1. Initialize the Repository
@@ -193,4 +202,4 @@ Using the GPT partition UUID solves that problem and makes cross-machine increme
 
 That is the approach implemented in Cloudstic for portable local sources.
 
-If you want the full command reference, see the [Cloudstic CLI documentation](https://docs.cloudstic.com).
+If you want to get started, see the [installation guide](https://docs.cloudstic.com/installation). If you want the full command reference, see the [Cloudstic CLI documentation](https://docs.cloudstic.com).

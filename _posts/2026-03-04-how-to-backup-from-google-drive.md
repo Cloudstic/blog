@@ -107,11 +107,21 @@ It is useful for anyone who stores important documents in Google Drive, especial
 
 The more operational value your Google Drive contains, the less reasonable it is to treat sync as backup.
 
+## Prerequisites
+
+Before running the commands below, make sure you have:
+
+- access to a backup destination such as local storage or an S3-compatible bucket
+- credentials for that destination available in your shell environment
+- a Google account ready to authorize Cloudstic on first use
+
 ## A Simple Setup
 
 Here is the minimal setup with Cloudstic.
 
 ### 1. Install the CLI
+
+If Cloudstic is not installed yet, start with the [installation guide](https://docs.cloudstic.com/installation).
 
 ```bash
 brew install cloudstic/tap/cloudstic
@@ -155,4 +165,4 @@ If the data matters, I want snapshots, an external repository, and a restore pat
 
 That is why I think backing up *from* Google Drive is just as important as backing up *to* it.
 
-Cloudstic is open source on [GitHub](https://github.com/cloudstic/cli), and the full command reference is available in the [Cloudstic CLI documentation](https://docs.cloudstic.com).
+Cloudstic is open source on [GitHub](https://github.com/cloudstic/cli). If you want to get started, see the [installation guide](https://docs.cloudstic.com/installation), and for the full command reference see the [Cloudstic CLI documentation](https://docs.cloudstic.com).

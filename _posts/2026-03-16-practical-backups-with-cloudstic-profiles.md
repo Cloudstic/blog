@@ -15,6 +15,15 @@ The first backup command is easy.
 
 The problem starts when you want to keep running it.
 
+## Prerequisites
+
+Before creating stores, auth entries, or profiles, make sure you have:
+
+- the Cloudstic CLI installed by following the [installation guide](https://docs.cloudstic.com/installation)
+- a backup destination already chosen, such as local storage or an S3-compatible bucket
+- the credentials for that destination available through environment variables or your system secret manager
+- a writable Cloudstic config location on the machine where you are defining the profiles
+
 At the beginning, many people do something like this:
 
 ```bash
@@ -308,4 +317,4 @@ The benefit is simple:
 
 If the command you run every day still contains every flag, every secret, and every path inline, the setup is not finished yet.
 
-For the complete command reference, see the [Cloudstic CLI documentation](https://docs.cloudstic.com). The CLI is also open source on [GitHub](https://github.com/cloudstic/cli).
+To get started, see the [installation guide](https://docs.cloudstic.com/installation). For the complete command reference, see the [Cloudstic CLI documentation](https://docs.cloudstic.com). The CLI is also open source on [GitHub](https://github.com/cloudstic/cli).
